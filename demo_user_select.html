@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>us-states</title>
+  <meta name="description" content="blah.">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+  <style>
+  		html, body {
+  			height: 100%;
+  			margin: 0;
+  		}
+  		#map {
+  			width: 1200px;
+  			height: 800px;
+  		}
+      table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+  	</style>
+</head>
+
+<body>
+
+<p>US Election results (by county/district) 2020 </p>
+
+<select id="mySelect" onchange="myFunction(this)">
+  <option value="">Select a state</option>
+  <option value="ak_2020_exported.geojson">AK:Alaska</option>
+  <option value="al_2020_exported.geojson">AL:Alabama</option>
+  <option value="az_2020_exported.geojson">AZ:Arizona</option>
+  <option value="co_2020_exported.geojson">CO:Colorado</option>
+  <option value="dc_2020_exported.geojson">DC:District of Columbia</option>
+  <option value="de_2020_exported.geojson">DE:Delaware</option>
+  <option value="ga_2020_exported.geojson">GA:Georgia</option>
+  <option value="hi_2020_exported.geojson">HI:Hawaii</option>
+  <option value="ia_2020_exported.geojson">IA:Iowa</option>
+  <option value="id_2020_exported.geojson">ID:Idaho</option>
+  <option value="il_2020_exported.geojson">IL:Illinois</option>
+  <option value="ks_2020_exported.geojson">KS:Kansas</option>
+  <option value="la_2020_exported.geojson">LA:Louisiana</option>
+  <option value="me_2020_exported.geojson">ME:Maine</option>
+  <option value="mi_2020_exported.geojson">MI:Michigan</option>
+  <option value="mn_2020_exported.geojson">MN:Minnesota</option>
+  <option value="mt_2020_exported.geojson">MT:Montana</option>
+  <option value="nc_2020_exported.geojson">NC:North Carolina</option>
+  <option value="nh_2020_exported.geojson">NH:New Hampshire</option>
+  <option value="nv_2020_exported.geojson">NV:Nevada</option>
+  <option value="oh_2020_exported.geojson">OH:Ohio</option>
+  <option value="ok_2020_exported.geojson">OK:Oklahoma</option>
+  <option value="ri_2020_exported.geojson">RI:Rhode Island</option>
+  <option value="sc_2020_exported.geojson">SC:South Carolina</option>
+  <option value="ut_2020_exported.geojson">UT:Utah</option>
+  <option value="vt_2020_exported.geojson">VT:Vermont</option>
+  <option value="wi_2020_exported.geojson">WI:Wisconsin</option>
+  <option value="wy_2020_exported.geojson">WY:Wyoming</option>
+</select>
+  <option value=".geojson"></option>
+<p id="loading_message"></p>
+<p id="number_counties"></p>
+<br>
+<div id='mapHolder'>
+  <div id='map'></div>
+</div>
+<div id='tableHolder'>
+  <div id='mytable'></div>
+</div>
+
+<script>
+function fillTable(tableData){
+  console.log("start function fillTable.")
+  console.log("tableData:", tableData)
+  var divContainer = document.getElementById("mytable");
+  divContainer.innerHTML = "loading table data.";
+  //
+  var table = document.createElement("table");
+  var tr = table.insertRow(-1);                   // TABLE ROW.
+  console.log("fillTable:tableData[0]:", tableData[0])
+  colnames = Object.keys(tableData[0])
+  console.log("fillTable:colnames.length:", colnames.length)
+  for (var i = 0; i < colnames.length; i++) {
+      var th = document.createElement("th");      // TABLE HEADER.
+      th.innerHTML = colnames[i];
+      tr.appendChild(th);
+  }
+  //
+  num_rows = tableData.length;
+  console.log("num_rows:",num_rows)
+  for (var i = 0; i < num_rows; i++){
+    console.log("row#"+i.toString()+":", tableData[i])
+    colnames = Object.keys(tableData[i])
+    var tr = table.insertRow(-1);                   // TABLE ROW.
+    for (var j = 0; j < colnames.length; j++) {
+      colname = colnames[j];
+      colvalue = tableData[i][colname]
+      var td = document.createElement("td");
+      td.innerHTML = colvalue
+      tr.appendChild(td);
+    }
+  }
+  //
+  divContainer.innerHTML = "Table Data"
+  divContainer.appendChild(table);
+}
+//
+function plotMap(mydata){
+  console.log("start function plotMap.")
+  console.log("mydata:",mydata)
+  document.getElementById('map').remove()
+  map_element = document.createElement('div');
+  map_element.setAttribute("id", "map");
+  document.getElementById('mapHolder').appendChild(map_element);
+  var mytable = []
+  min_lat = 90
+  max_lat = -90
+  min_lon = 180
+  max_lon = -180
+  //nb geojson format is [ lon, lat ]
+  //for (let i = 0; i < mydata['features'].length; i++){
+  number_counties = mydata['features'].length
+  console.log("number_counties:", number_counties)
+  document.getElementById("number_counties").innerHTML = "Number of divisions :"+number_counties
+  //for (let i = 0; i < mydata['features'].length; i++){
+  for (let i = 0; i < 20; i++){
+    district = mydata['features'][i]['properties']['DISTRICT']
+    console.log("district:", district)
+    district_name = mydata['features'][i]['properties']['NAME']
+    console.log("district_name:", district_name)
+    console.log("G20PRERTRU:", mydata['features'][i]['properties']["G20PRERTRU"])
+    console.log("G20PREDBID:", mydata['features'][i]['properties']["G20PREDBID"])
+    console.log("G20PRELJOR:", mydata['features'][i]['properties']["G20PRELJOR"])
+    console.log("G20PREGJAN:", mydata['features'][i]['properties']["G20PREGJAN"])
+    console.log("G20PRECBLA:", mydata['features'][i]['properties']["G20PRECBLA"])
+    console.log("G20PREIPIE:", mydata['features'][i]['properties']["G20PREIPIE"])
+    console.log("G20PREOFUE:", mydata['features'][i]['properties']["G20PREOFUE"])
+    console.log("G20USSRSUL:", mydata['features'][i]['properties']["G20USSRSUL"])
+    console.log("G20USSDGRO:", mydata['features'][i]['properties']["G20USSDGRO"])
+    console.log("G20USSOHOW:", mydata['features'][i]['properties']["G20USSOHOW"])
+    console.log("G20HALRYOU:", mydata['features'][i]['properties']["G20HALRYOU"])
+    console.log("G20HALDGAL:", mydata['features'][i]['properties']["G20HALDGAL"])
+    console.log("mydata['features'][i]['properties']:", mydata['features'][i]['properties'])
+    console.log("keys:", Object.keys(mydata['features'][i]['properties']))
+    keys = Object.keys(mydata['features'][i]['properties'])
+    count_total = 0
+    console.log("keys_start")
+    for (let k = 2; k < keys.length; k++){
+      console.log(keys[k]+":"+mydata['features'][i]['properties'][keys[k]])
+      if(keys[k].substring(0,3)=="G20"){
+        count_total+=mydata['features'][i]['properties'][keys[k]]
+      }
+    }
+    row_data={}
+    for (let k = 0; k < keys.length; k++){
+      console.log(keys[k]+":"+mydata['features'][i]['properties'][keys[k]])
+      row_data[keys[k]] = mydata['features'][i]['properties'][keys[k]]
+    }
+    row_data["count_total"]=count_total
+    mytable.push(row_data)
+    console.log("keys_end")
+    console.log("keys_end:count_total:", count_total)
+    mydata['features'][i]['geometry']['coordinates']=mydata['features'][i]['geometry']['coordinates'][0]
+    //console.log("i="+i.toString()+", geometry-type : ", mydata['features'][i]['geometry']['type'])
+    //console.log("# of co-ordinates:0:0:", mydata['features'][i]['geometry']['coordinates'][0][0].length)
+    //console.log("# of co-ordinates:0:", mydata['features'][i]['geometry']['coordinates'][0].length)
+    max_length_coords=0
+    for (let j = 0; j < mydata['features'][i]['geometry']['coordinates'][0].length; j++){
+      if (max_length_coords<mydata['features'][i]['geometry']['coordinates'][0][j].length){
+        max_length_coords=mydata['features'][i]['geometry']['coordinates'][0][j].length
+        //
+        if (min_lat>mydata['features'][i]['geometry']['coordinates'][0][j][1]){
+          min_lat=mydata['features'][i]['geometry']['coordinates'][0][j][1]
+        }
+        if (max_lat<mydata['features'][i]['geometry']['coordinates'][0][j][1]){
+          max_lat=mydata['features'][i]['geometry']['coordinates'][0][j][1]
+        }
+        //
+        if (min_lon>mydata['features'][i]['geometry']['coordinates'][0][j][0]){
+          min_lon=mydata['features'][i]['geometry']['coordinates'][0][j][0]
+        }
+        if (max_lon<mydata['features'][i]['geometry']['coordinates'][0][j][0]){
+          max_lon=mydata['features'][i]['geometry']['coordinates'][0][j][0]
+        }
+        //
+      }
+    }
+    //console.log("max_length_coords:", max_length_coords)
+    if (max_length_coords==2){
+      //console.log("max_length_coords==2, change geometry-type from MultiPolygon to Polygon")
+      mydata['features'][i]['geometry']['type']="Polygon"
+    }
+  }
+  console.log("mytable:", mytable)
+  fillTable(mytable)
+  //console.log("min_lat:", min_lat)
+  //console.log("max_lat:", max_lat)
+  //console.log("min_lon:", min_lon)
+  //console.log("max_lon:", max_lon)
+  mid_lat = ((min_lat+max_lat)/2).toFixed(4)
+  mid_lon = ((min_lon+max_lon)/2).toFixed(4)
+  //console.log("mid_lat:", mid_lat)
+  //console.log("mid_lon:", mid_lon)
+  //
+  var mapboxAccessToken = "pk.eyJ1IjoiYXNwaXJpbmdndXJ1IiwiYSI6ImNrcXcxcjlnYjBjMmIycnF5b3QxZGsweWQifQ.EUOqr3lyQe6LmYrF2vlaig";
+  //nb geojson format is [ lon, lat ] but .map requires [lat, lon]
+  var map = L.map('map', {attributionControl: false}).setView([mid_lat, mid_lon], 4);
+  L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=' + mapboxAccessToken, {
+      maxZoom: 18,
+      attribution: 'Maps by Mapbox.',
+      id: 'mapbox/light-v9',
+      tileSize: 512,
+      zoomOffset: -1
+  }).addTo(map);
+  //var geojson = L.geoJson(statesData).addTo(map);
+  var geojson = L.geoJson(mydata).addTo(map);
+}
+//
+function myFunction(sel) {
+  console.log("myFunction:sel:", sel)
+  console.log("myFunction:sel.value:", sel.value)
+  console.log("myFunction:sel.selectedIndex:", sel.selectedIndex)
+  console.log("myFunction:sel.options[sel.selectedIndex].text:", sel.options[sel.selectedIndex].text)
+  var state_data_fn = sel.value
+  var state_name = sel.options[sel.selectedIndex].text
+  //var x = document.getElementById("mySelect").value;
+  document.getElementById("loading_message").innerHTML = "loading data for state: " + state_name;
+  console.log("loading file state_data_fn:", state_data_fn)
+  fetch(state_data_fn, {
+    headers : {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+      console.log(data)
+      console.log("fetch function A")
+      plotMap(data)
+    });
+  console.log("end myFunction")
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+LA invalid latlng object 
+KS invalid latlng object 
+CO invalid latlng object 
+DE - weird, map zoom and points wrong? try redo export
+ID invalid latlng object 
+KS invalid latlng object 
+NC- map broken? redo export 
+NV - invalid latlng object 
+SC  map broken? redo export 
+UT  map broken? redo export 
+
+
+
+
+
+works
+ak
+AL
+AZ
+DC (needs better zoom)
+GA
+IA
+IL
+ME
+MI
+MN
+MT
+OH
